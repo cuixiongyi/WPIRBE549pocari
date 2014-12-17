@@ -7,21 +7,23 @@ from matplotlib import pyplot as plt
 from PocariLib import *
 from math import *
 
+colour_training_image = cv2.imread('images/Pocari_15.jpg',1)
+
 cap = cv2.VideoCapture(0)
 while(True):
-	ret, img = cap.read()
+	ret, colour_camera_image = cap.read()
 
 	# Load Image in Colour
 	#img = cv2.imread('images/pocari_in_world/Pocari_8.jpg',1)
 
 	# Get image size
-	width, height, depth = img.shape
+	width, height, depth = colour_camera_image.shape
 	img_pixels = height * width
 	print "Image size is " + str(width) + " x " + str(height)
 
 	# Create HSV and Grayscale Images
-	hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-	gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+	hsv = cv2.cvtColor(colour_camera_image, cv2.COLOR_BGR2HSV)
+	gray = cv2.cvtColor(colour_camera_image, cv2.COLOR_BGR2GRAY)
 
 	# Typical Pocari Blue in [H,S,V]
 	pocari_lower_blue = np.array([110, 100, 100], dtype=np.uint8)
@@ -69,10 +71,15 @@ while(True):
 
 	# Bitwise-AND mask and original image
 	#res = cv2.bitwise_and(img,img, mask= mask)
-	cv2.rectangle(img,(max_row,max_col),(max_row+windowSize,max_col+windowSize),(128,0,255),5)
-	cv2.imshow("Pocari",img)
+	ROI = [max_col, max_col+windowSize, max_row, max_row+windowSize]
+
+	colour_camera_image = ORBit(colour_camera_image,ROI,colour_training_image)
+	
+	cv2.rectangle(colour_camera_image,(max_row,max_col),(max_row+windowSize,max_col+windowSize),(128,0,255),5)
+	cv2.imshow("Pocari",colour_camera_image)
+	
 	print "Max i and j: " + str(max_col) + " , " + str(max_row)
-	#cv2.imshow("Pocari",img)
+	
 	k = cv2.waitKey(1)
 	if k == ord('q'):
 		break
