@@ -7,15 +7,32 @@ from matplotlib import pyplot as plt
 from PocariLib import *
 from math import *
 
-# read the training image
-colour_training_image = cv2.imread('images/Pocari_15.jpg',1)
-b,g,r = cv2.split(colour_training_image)
-colour_training_image = cv2.merge([r,g,b])
-training_image = cv2.cvtColor(colour_training_image, cv2.COLOR_RGB2GRAY)
-
 
 #set  up camera read
 cap = cv2.VideoCapture(0)
+
+# Initiate ORB detector
+orb = cv2.ORB(100,1.2)
+
+# create BFMatcher object
+bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+#load all the training examples into paralelll arrays
+max_training_image_index = 22 
+colour_training_images = [None]*max_training_image_index
+training_images = [None]*max_training_image_index
+kp1 = [None]*max_training_image_index
+des1 = [None] * max_training_image_index
+for i in range(0,max_training_image_index):
+    colour_training_images[i] = cv2.imread('images/Pocari_'+str(i+1)+'.jpg',1)
+    b,g,r = cv2.split(colour_training_images[i])
+    colour_training_images[i] = cv2.merge([r,g,b])
+    training_images[i] = cv2.cvtColor(colour_training_images[i], cv2.COLOR_RGB2GRAY)    
+    kp1[i], des1[i] = orb.detectAndCompute(training_images[i],None)
+
+# Typical Pocari Blue in [H,S,V]
+pocari_lower_blue = np.array([110, 100, 100], dtype=np.uint8)
+pocari_upper_blue = np.array([130,255,255], dtype=np.uint8)
 
 while(True):
 	ret, colour_camera_image = cap.read()
@@ -32,35 +49,22 @@ while(True):
 	hsv = cv2.cvtColor(colour_camera_image, cv2.COLOR_BGR2HSV)
 	gray = cv2.cvtColor(colour_camera_image, cv2.COLOR_RGB2GRAY)
 
-	# Typical Pocari Blue in [H,S,V]
-	pocari_lower_blue = np.array([110, 100, 100], dtype=np.uint8)
-	pocari_upper_blue = np.array([130,255,255], dtype=np.uint8)
-
 	# Threshold the HSV image to get only blue colors
 	mask = cv2.inRange(hsv, pocari_lower_blue, pocari_upper_blue)
 
 	# Find percentage of Pocari_blue pixels in the entire image
 	num_pocari_pix = np.size(np.nonzero(mask))
 	percent_pocari_pix = num_pocari_pix/img_pixels * 100
-	#print str(num_pocari_pix) + " pixels of the image could be Pocari"
 
 	# Compute window size based on number of pocari pixels, 25% increase to accommodate tilt
 	windowSize = 50 + int(sqrt(num_pocari_pix) * 1.25)
-	#print "Window size is " + str(windowSize)
-	
-	# Pad Image with window size -- bottom and right
-	#img = cv2.copyMakeBorder(img, 0, windowSize, 0, windowSize, cv2.BORDER_CONSTANT, value=0)
-
-	window_step = 50
-
-	#print "Window Step: " + str(window_step)
-
-	#cv2.imshow("Pocari",img)
+        window_step = 50
 
 	max_pocari_pix = 0
 	row,column = 0,0
 	max_row,max_col = 0,0
-		# Iterate through the image
+	
+	# Iterate through the image
 	while (column < (width - windowSize)):
 		row = 0
 		while (row < (height - windowSize)):
@@ -76,42 +80,37 @@ while(True):
 		column = column + window_step
 
 	# Bitwise-AND mask and original image
-	#res = cv2.bitwise_and(img,img, mask= mask)
+	# res = cv2.bitwise_and(img,img, mask= mask)
 	ROI = [max_col, max_col+windowSize, max_row, max_row+windowSize]
 
 	sub_camera_image = gray[max_col:max_col+windowSize, max_row:max_row+windowSize]
 	#cv2.imshow("Sub Camera Image",sub_camera_image)
 
-	# Initiate ORB detector
-	orb = cv2.ORB(100,1.2)
-
-	#print "Size of training_image = " + str(np.shape(training_image))
-	#print "Size of camera_image = " + str(np.shape(camera_image))
-
 	# find the keypoints and descriptors with ORB
-	kp1, des1 = orb.detectAndCompute(training_image,None)
 	kp2, des2 = orb.detectAndCompute(sub_camera_image,None)
 
-	# create BFMatcher object
-	bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
+        #for (i in range(5)):
+        #    # read the training image
+        
+        i=16
+        colsIndex = 1
 	# Match descriptors.
-	if (np.shape(des2)!=() and np.shape(des1)[0]==np.shape(des2)[0]):
-		matches = bf.match(des1,des2)
+	if (np.shape(des2)!=() and np.shape(des1[i])!=() and np.shape(des1[i])[colsIndex]!=0 and np.shape(des1[i])[colsIndex]==np.shape(des2)[colsIndex] and (type(des2)==type(des1[i])) ):# and (type(des2[i][0][0]) == np.uint8 or type(des2[0][0]) == np.float32)):
+		matches = bf.match(des1[i],des2)
 
 		# Sort them in the order of their distance.
 		matches = sorted(matches, key = lambda x:x.distance)
 
 		# Draw first 30 matches.
-		img3 = drawMatches(training_image,kp1,sub_camera_image,kp2,matches[:30])
+		img3 = drawMatches(training_images[i],kp1[i],sub_camera_image,kp2,matches[:30])
 		cv2.imshow("Matched",img3)
 
-	else:
+	#else:
 
 		#colour_camera_image = ORBit(sub_colour_camera_image,colour_training_image)
 	
-		cv2.rectangle(colour_camera_image,(max_row,max_col),(max_row+windowSize,max_col+windowSize),(128,0,255),5)
-		cv2.imshow("Pocari",colour_camera_image)
+	cv2.rectangle(colour_camera_image,(max_row,max_col),(max_row+windowSize,max_col+windowSize),(128,0,255),5)
+	cv2.imshow("Pocari",colour_camera_image)
 
 	#cv2.imshow("Pocari",colour_camera_image)
 	
