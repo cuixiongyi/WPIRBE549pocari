@@ -49,10 +49,12 @@ def drawMatches(img1, kp1, img2, kp2, matches):
     out = np.zeros((max([rows1,rows2]),cols1+cols2,3), dtype='uint8')
 
     # Place the first image to the left
-    out[:rows1,:cols1,:] = np.dstack([img1[:,:,[2]], img1[:,:,[1]], img1[:,:,[0]]])
+    #out[:rows1,:cols1,:] = np.dstack([img1[:,:,[0]], img1[:,:,[1]], img1[:,:,[2]]])
+    out[:rows1,:cols1,:] = np.dstack([img1, img1, img1])
 
     # Place the next image to the right of it
-    out[:rows2,cols1:cols1+cols2,:] = np.dstack([img2[:,:,[2]], img2[:,:,[1]], img2[:,:,[0]]])
+    #out[:rows2,cols1:cols1+cols2,:] = np.dstack([img2[:,:,[0]], img2[:,:,[1]], img2[:,:,[2]]])
+    out[:rows2,cols1:cols1+cols2,:] = np.dstack([img2, img2, img2])
 
     # For each pair of points we have between both images
     # draw circles, then connect a line between them
@@ -80,59 +82,23 @@ def drawMatches(img1, kp1, img2, kp2, matches):
         cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (0, 0, 255), 1)
     return out
 
-'''def ORBit(image,ROI,training_img):
-	# Convert from BGR to RGB because ...
-	b,g,r = cv2.split(image)
-	original_image = cv2.merge([r,g,b])
-	image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
-
-	b,g,r = cv2.split(training_img)
-	original_training_img = cv2.merge([r,g,b])
-	training_img = cv2.cvtColor(original_training_img, cv2.COLOR_BGR2GRAY)
-
-	# Initiate ORB detector
-	orb = cv2.ORB(100,1.2)
-
-	# ROI coordinates from the Scale-Invariant Histogram Image
-	c1,c2,r1,r2 = ROI
-
-	# find the keypoints and descriptors with ORB
-	kp1, des1 = orb.detectAndCompute(training_img,None)
-	kp2, des2 = orb.detectAndCompute(image[c1:c2,r1:r2],None)
-
-	# create BFMatcher object
-	bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
-	# Match descriptors.
-	matches = bf.match(des1,des2)
-
-	# Sort them in the order of their distance.
-	matches = sorted(matches, key = lambda x:x.distance)
-
-	# Draw first 30 matches.
-	out = drawMatches(training_img,kp1,image,kp2,matches[:30])
-	return out'''
-
-def ORBit(colour_camera_image,ROI,colour_training_image):
+def ORBit(local_colour_camera_image, local_colour_training_image):
 	# Convert Original Image of Scene into Grayscale
-	b,g,r = cv2.split(colour_camera_image)
-	original_image = cv2.merge([r,g,b])
-	image = cv2.cvtColor(original_image, cv2.COLOR_RGB2GRAY)
+	b,g,r = cv2.split(local_colour_camera_image)
+	local_colour_camera_image = cv2.merge([r,g,b])
+	local_camera_image = cv2.cvtColor(local_colour_camera_image, cv2.COLOR_RGB2GRAY)
 
 	# Convert Training Image into Grayscale
-	b,g,r = cv2.split(colour_training_image)
-	original_training_image = cv2.merge([r,g,b])
-	training_image = cv2.cvtColor(original_training_image, cv2.COLOR_RGB2GRAY)
+	b,g,r = cv2.split(local_colour_training_image)
+	local_colour_training_image = cv2.merge([r,g,b])
+	local_training_image = cv2.cvtColor(local_colour_training_image, cv2.COLOR_RGB2GRAY)
 
 	# Initiate ORB detector
 	orb = cv2.ORB(100,1.2)
 
-	# ROI coordinates from the Scale-Invariant Histogram Image
-	c1,c2,r1,r2 = ROI
-
 	# Find the keypoints and descriptors with ORB
-	kp1, des1 = orb.detectAndCompute(training_image,None)
-	kp2, des2 = orb.detectAndCompute(image[c1:c2,r1:r2],None)
+	kp1, des1 = orb.detectAndCompute(local_training_image,None)
+	kp2, des2 = orb.detectAndCompute(local_camera_image, None) #c1:c2,r1:r2]
 
 	# create BFMatcher object
 	bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
@@ -144,7 +110,7 @@ def ORBit(colour_camera_image,ROI,colour_training_image):
 	matches = sorted(matches, key = lambda x:x.distance)
 
 	# Draw first 30 matches.
-	out = drawMatches(original_training_image,kp1,original_image,kp2,matches[:30])
+	out = drawMatches(local_colour_training_image,kp1,local_colour_camera_image,kp2,matches[:30])
 	return out
 
 

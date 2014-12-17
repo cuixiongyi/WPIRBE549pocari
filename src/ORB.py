@@ -14,6 +14,8 @@ cap = cv2.VideoCapture(0)
 while(True):
 	ret, camera_image = cap.read()
 
+	#camera_image = camera_image[10:10+180,20:20+180]
+
 	# Convert Image of Scene into RGB and then to GRAY
 	b,g,r = cv2.split(camera_image)
 	colour_camera_image = cv2.merge([r,g,b])
@@ -21,6 +23,9 @@ while(True):
 
 	# Initiate ORB detector
 	orb = cv2.ORB(100,1.2)
+
+	#print "Size of training_image = " + str(np.shape(training_image))
+	#print "Size of camera_image = " + str(np.shape(camera_image))
 
 	# find the keypoints and descriptors with ORB
 	kp1, des1 = orb.detectAndCompute(training_image,None)
