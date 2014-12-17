@@ -12,7 +12,8 @@ from math import *
 cap = cv2.VideoCapture(0)
 
 # Initiate ORB detector
-orb = cv2.ORB(100,1.2)
+usingORB = True
+orb = cv2.ORB(100,1.2) if usingORB else cv2.SURF(200)
 
 # create BFMatcher object
 bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
@@ -101,10 +102,10 @@ while(True):
         bestMatches = None
         for i in range(0,max_training_image_index):
        	    # Match descriptors.
-       	    if (np.shape(des2)!=() and np.shape(des1[i])!=() and np.shape(des1[i])[colsIndex]!=0 and np.shape(des1[i])[colsIndex]==np.shape(des2)[colsIndex] and (type(des2)==type(des1[i])) ):# and (type(des2[i][0][0]) == np.uint8 or type(des2[0][0]) == np.float32)):
+       	    if (np.shape(des2)!=() and np.shape(des1[i])!=() and ((not usingORB) or (usingORB and np.shape(des1[i])[colsIndex]!=0 and np.shape(des1[i])[colsIndex]==np.shape(des2)[colsIndex])) and (type(des2)==type(des1[i])) ):# and (type(des2[i][0][0]) == np.uint8 or type(des2[0][0]) == np.float32)):
       		matches = bf.match(des1[i],des2)
         
-                score = len(matches)
+                score = sum(map(lambda x:x.distance, matches))/len(matches)
                 if score>= bestMatchScore:
                     bestMatchScore = score
                     bestMatchIndex = i
